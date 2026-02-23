@@ -9,6 +9,10 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import LeaderboardPage from './pages/LeaderboardPage';
 import NudgesPage from './pages/NudgesPage';
 import SettingsPage from './pages/SettingsPage';
+import ForecastPage from './pages/ForecastPage';
+import AnomaliesPage from './pages/AnomaliesPage';
+import InsightsPage from './pages/InsightsPage';
+import PatternsPage from './pages/PatternsPage';
 
 export default function App() {
     return (
@@ -23,6 +27,10 @@ export default function App() {
                                 <Routes>
                                     <Route path="/" element={<DashboardPage />} />
                                     <Route path="/analytics" element={<AnalyticsPage />} />
+                                    <Route path="/forecast" element={<ForecastPage />} />
+                                    <Route path="/anomalies" element={<AnomaliesPage />} />
+                                    <Route path="/patterns" element={<PatternsPage />} />
+                                    <Route path="/insights" element={<InsightsPage />} />
                                     <Route path="/leaderboard" element={<LeaderboardPage />} />
                                     <Route path="/nudges" element={<NudgesPage />} />
                                     <Route path="/settings" element={<SettingsPage />} />

@@ -9,12 +9,19 @@ import {
     ChevronLeft,
     ChevronRight,
     Zap,
-    Droplets,
+    Brain,
+    ShieldAlert,
+    Sparkles,
+    Layers,
 } from 'lucide-react';
 
 const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/analytics', icon: BarChart3, label: 'Analytics' },
+    { to: '/forecast', icon: Brain, label: 'ML Forecast', badge: 'AI' },
+    { to: '/anomalies', icon: ShieldAlert, label: 'Anomalies', badge: 'AI' },
+    { to: '/patterns', icon: Layers, label: 'Patterns', badge: 'AI' },
+    { to: '/insights', icon: Sparkles, label: 'Insights', badge: 'AI' },
     { to: '/leaderboard', icon: Trophy, label: 'Leaderboard' },
     { to: '/nudges', icon: Bell, label: 'Nudges' },
     { to: '/settings', icon: Settings, label: 'Settings' },
@@ -45,15 +52,62 @@ export default function Sidebar() {
                                 EcoWatch
                             </h1>
                             <p className="text-[10px] text-gray-400 -mt-0.5 tracking-wider uppercase">
-                                Energy &amp; Water
+                                AI-Powered Monitor
                             </p>
                         </div>
                     )}
                 </div>
 
                 {/* Nav */}
-                <nav className="flex-1 px-3 space-y-1">
-                    {navItems.map(({ to, icon: Icon, label }) => (
+                <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto scrollbar-thin">
+                    {/* Main section */}
+                    {!collapsed && <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-4 pt-2 pb-1">Overview</p>}
+                    {navItems.slice(0, 2).map(({ to, icon: Icon, label }) => (
+                        <NavLink
+                            key={to}
+                            to={to}
+                            className={({ isActive }) =>
+                                `nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0' : ''}`
+                            }
+                            title={label}
+                        >
+                            <Icon className="w-5 h-5 flex-shrink-0" />
+                            {!collapsed && <span>{label}</span>}
+                        </NavLink>
+                    ))}
+
+                    {/* ML section */}
+                    {!collapsed && (
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-4 pt-4 pb-1 flex items-center gap-1">
+                            <Brain className="w-3 h-3" /> ML Models
+                        </p>
+                    )}
+                    {navItems.slice(2, 6).map(({ to, icon: Icon, label, badge }) => (
+                        <NavLink
+                            key={to}
+                            to={to}
+                            className={({ isActive }) =>
+                                `nav-link ${isActive ? 'active' : ''} ${collapsed ? 'justify-center px-0' : ''}`
+                            }
+                            title={label}
+                        >
+                            <Icon className="w-5 h-5 flex-shrink-0" />
+                            {!collapsed && (
+                                <>
+                                    <span className="flex-1">{label}</span>
+                                    {badge && (
+                                        <span className="text-[8px] font-bold bg-gradient-to-r from-brand-500 to-purple-500 text-white px-1.5 py-0.5 rounded-full">
+                                            {badge}
+                                        </span>
+                                    )}
+                                </>
+                            )}
+                        </NavLink>
+                    ))}
+
+                    {/* Community section */}
+                    {!collapsed && <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest px-4 pt-4 pb-1">Community</p>}
+                    {navItems.slice(6).map(({ to, icon: Icon, label }) => (
                         <NavLink
                             key={to}
                             to={to}
@@ -86,19 +140,24 @@ export default function Sidebar() {
           border-t border-gray-200/50 dark:border-gray-700/50
           flex justify-around py-2 px-1 safe-bottom"
             >
-                {navItems.slice(0, 4).map(({ to, icon: Icon, label }) => {
+                {[navItems[0], navItems[2], navItems[3], navItems[5], navItems[6]].map(({ to, icon: Icon, label, badge }) => {
                     const isActive = location.pathname === to;
                     return (
                         <NavLink
                             key={to}
                             to={to}
-                            className={`flex flex-col items-center gap-0.5 py-1 px-3 rounded-xl transition-all text-xs
+                            className={`flex flex-col items-center gap-0.5 py-1 px-2 rounded-xl transition-all text-[10px] relative
                 ${isActive
                                     ? 'text-brand-600 dark:text-brand-400'
                                     : 'text-gray-400 dark:text-gray-500'}`}
                         >
                             <Icon className={`w-5 h-5 ${isActive ? 'scale-110' : ''} transition-transform`} />
-                            <span className="font-medium">{label}</span>
+                            <span className="font-medium">{label.split(' ')[0]}</span>
+                            {badge && (
+                                <span className="absolute -top-1 -right-1 text-[6px] font-bold bg-gradient-to-r from-brand-500 to-purple-500 text-white px-1 py-0.5 rounded-full leading-none">
+                                    AI
+                                </span>
+                            )}
                         </NavLink>
                     );
                 })}
