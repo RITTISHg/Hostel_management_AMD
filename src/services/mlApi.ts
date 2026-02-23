@@ -1,21 +1,74 @@
 /**
  * ML API service — connects React frontend to the Flask ML backend.
+ *
+ * Security:
+ *  - Uses environment variable for API base URL
+ *  - Request timeout (10s) to prevent hanging
+ *  - Response size validation
+ *  - Input sanitization on parameters
+ *  - Graceful fallback when backend is unavailable
  */
 
-const ML_API_BASE = 'http://localhost:5000/api';
+const ML_API_BASE = import.meta.env.VITE_ML_API_URL || 'http://localhost:5000/api';
+const REQUEST_TIMEOUT = 10_000; // 10 seconds
+const MAX_RESPONSE_SIZE = 1_048_576; // 1MB
+
+/** Sanitize user-provided string inputs */
+function sanitize(input: string): string {
+    return input.replace(/[<>"'`;(){}]/g, '').trim().slice(0, 100);
+}
+
+/** Validate numeric range */
+function clampInt(val: number, min: number, max: number): number {
+    return Math.max(min, Math.min(max, Math.floor(val)));
+}
 
 async function fetchML<T>(endpoint: string, params?: Record<string, string>): Promise<T> {
     const url = new URL(`${ML_API_BASE}${endpoint}`);
     if (params) {
-        Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+        Object.entries(params).forEach(([k, v]) => url.searchParams.set(sanitize(k), sanitize(v)));
     }
 
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
     try {
-        const res = await fetch(url.toString());
-        if (!res.ok) throw new Error(`ML API error: ${res.status}`);
+        const res = await fetch(url.toString(), {
+            method: 'GET',
+            signal: controller.signal,
+            headers: {
+                'Accept': 'application/json',
+            },
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+            throw new Error(`ML API error: ${res.status}`);
+        }
+
+        // Security: check content-type
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            throw new Error('Invalid response content type');
+        }
+
+        // Security: check response size via Content-Length (if available)
+        const contentLength = res.headers.get('content-length');
+        if (contentLength && parseInt(contentLength) > MAX_RESPONSE_SIZE) {
+            throw new Error('Response too large');
+        }
+
         return res.json();
     } catch (err) {
-        console.warn(`ML API unavailable (${endpoint}), using fallback data`);
+        clearTimeout(timeoutId);
+
+        if (err instanceof DOMException && err.name === 'AbortError') {
+            console.warn(`ML API timeout (${endpoint}), using fallback data`);
+        } else {
+            console.warn(`ML API unavailable (${endpoint}), using fallback data`);
+        }
+
         return getFallbackData(endpoint) as T;
     }
 }
@@ -23,11 +76,18 @@ async function fetchML<T>(endpoint: string, params?: Record<string, string>): Pr
 // ─── API Functions ───
 
 export async function getAnomalies(zone = 'all', hours = 72) {
-    return fetchML<AnomalyResponse>('/anomalies', { zone, hours: String(hours) });
+    return fetchML<AnomalyResponse>('/anomalies', {
+        zone: sanitize(zone),
+        hours: String(clampInt(hours, 1, 168)),
+    });
 }
 
 export async function getForecast(zone = 'campus', hours = 48, type = 'energy') {
-    return fetchML<ForecastResponse>('/forecast', { zone, hours: String(hours), type });
+    return fetchML<ForecastResponse>('/forecast', {
+        zone: sanitize(zone),
+        hours: String(clampInt(hours, 1, 168)),
+        type: sanitize(type),
+    });
 }
 
 export async function getPatterns() {
@@ -35,7 +95,7 @@ export async function getPatterns() {
 }
 
 export async function getRecommendations(zone = 'all') {
-    return fetchML<RecommendationResponse>('/recommendations', { zone });
+    return fetchML<RecommendationResponse>('/recommendations', { zone: sanitize(zone) });
 }
 
 export async function getSavingsPotential() {
