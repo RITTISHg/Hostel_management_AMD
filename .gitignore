@@ -3,4 +3,12 @@ dist
 .vite
 *.local
 .DS_Store
-dist
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
